@@ -29,8 +29,8 @@ void SDL_ExitWithErrorAndDeleteWR(SDL_Window *window, SDL_Renderer *renderer,con
     SDL_ExitWithError(message);
 }
 
-//Creation textures boutons start et exit
-void SDL_CreateButton(SDL_Window *window, SDL_Renderer *renderer, SDL_Surface **image_bouton, SDL_Texture **texture_bouton ,const char *chemin_image_bouton)
+//Creation textures arrire plan & boutons start et exit
+void MySDL_CreateTexture(SDL_Window *window, SDL_Renderer *renderer, SDL_Surface **image_bouton, SDL_Texture **texture_bouton ,const char *chemin_image_bouton)
 {
     //Chargement image bouton
     *image_bouton = SDL_LoadBMP(chemin_image_bouton);
@@ -64,16 +64,7 @@ int main (int argc, char *argv[])
 	SDL_Surface *image_arriere_plan = NULL;
         SDL_Texture *texture_arriere_plan = NULL;
         
-        //Chargement image arriere plan
-        image_arriere_plan = SDL_LoadBMP("/home/madjid/Documents/C/Projet/Images/subtle_space_background.bmp");
-        if(image_arriere_plan == NULL)
-            SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement image arrière plan");
-	
-	//Creation texture arriere plan
-	texture_arriere_plan = SDL_CreateTextureFromSurface(renderer, image_arriere_plan);
-	SDL_FreeSurface(image_arriere_plan);
-	if(texture_arriere_plan == NULL)
-            SDL_ExitWithErrorAndDeleteWR(window, renderer, "Creation texture arriere plan");
+        MySDL_CreateTexture(window, renderer, &image_arriere_plan, &texture_arriere_plan, "/home/madjid/Documents/C/Projet/Images/subtle_space_background.bmp");
         
         //Encadrement pour la texture arriere plan
 	SDL_Rect rectangle_texture;
@@ -105,7 +96,7 @@ int main (int argc, char *argv[])
         //Encadrement pour bouton start
 	SDL_Rect rectangle_bouton_start = {LARGEUR_FENETRE/2 - LARGEUR_BOUTON/2, HAUTEUR_FENETRE/3 - HAUTEUR_BOUTON/2, LARGEUR_BOUTON, HAUTEUR_BOUTON};
         
-        SDL_CreateButton(window, renderer, &image_bouton_start, &texture_bouton_start, "/home/madjid/Documents/C/Projet/Images/start.bmp");
+        MySDL_CreateTexture(window, renderer, &image_bouton_start, &texture_bouton_start, "/home/madjid/Documents/C/Projet/Images/start.bmp");
 	
 	//Chargement en memoire de la texture bouton start
         if(SDL_QueryTexture(texture_bouton_start, NULL, NULL, &rectangle_bouton_start.w, &rectangle_bouton_start.h) != 0)
@@ -115,7 +106,7 @@ int main (int argc, char *argv[])
         if(SDL_RenderCopy(renderer, texture_bouton_start, NULL, &rectangle_bouton_start) != 0)
             SDL_ExitWithErrorAndDeleteWR(window, renderer, "Affichage texture bouton start");
           
-        SDL_CreateButton(window, renderer, &image_bouton_exit, &texture_bouton_exit, "/home/madjid/Documents/C/Projet/Images/exit.bmp");
+        MySDL_CreateTexture(window, renderer, &image_bouton_exit, &texture_bouton_exit, "/home/madjid/Documents/C/Projet/Images/exit.bmp");
         
         //Encadrement pour bouton exit
 	SDL_Rect rectangle_bouton_exit = {LARGEUR_FENETRE/2 - LARGEUR_BOUTON/2, 2*HAUTEUR_FENETRE/3 - HAUTEUR_BOUTON/2, LARGEUR_BOUTON, HAUTEUR_BOUTON};
