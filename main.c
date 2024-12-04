@@ -1,5 +1,6 @@
 // gcc main.c -o prog $(sdl2-config --cflags --libs)
 // ./prog
+// Token : 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
 
 #include <SDL.h>
 #include <stdio.h>
@@ -12,6 +13,10 @@
 //Boutons
 #define LARGEUR_BOUTON 300 //Correspond à la la largeur de l'image du bouton 
 #define HAUTEUR_BOUTON 100 //Correspond à la la hauteur de l'image du bouton 
+
+//Fusee
+#define LARGEUR_FUSEE 100 //Correspond à la la largeur de l'image du bouton 
+#define HAUTEUR_FUSEE 100 //Correspond à la la hauteur de l'image du bouton 
 
 //Gestion des erreurs avant creation fenetre et rendu
 void SDL_ExitWithError(const char *message)
@@ -44,6 +49,32 @@ void MySDL_CreateTexture(SDL_Window *window, SDL_Renderer *renderer, SDL_Surface
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Creation texture bouton");
 }
 
+//Creation fusee
+void creationFusee(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture **texture_bouton_start, SDL_Texture **texture_bouton_exit)
+{
+    //Initialisation
+    SDL_Surface *image_fusee = NULL;
+    SDL_Texture *texture_fusee = NULL;
+
+    //Encadrement pour la fusee
+    SDL_Rect rectangle_fusee = {LARGEUR_FENETRE/2 - LARGEUR_FUSEE/2, HAUTEUR_FENETRE/2 - HAUTEUR_FUSEE/2, LARGEUR_FUSEE, HAUTEUR_FUSEE};
+
+    //Creation texture fusee
+    MySDL_CreateTexture(window, renderer, &image_fusee, &texture_fusee, "/home/madjid/Documents/C/Projet/Images/fusee.bmp");
+
+    //Chargement en memoire de la texture fusee
+    if(SDL_QueryTexture(texture_fusee, NULL, NULL, &rectangle_fusee.w, &rectangle_fusee.h) != 0)
+        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement en memoire texture fusee");
+        
+    //Affichage image fusee
+    if(SDL_RenderCopy(renderer, texture_fusee, NULL, &rectangle_fusee) != 0)
+        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Affichage texture fusee");
+        
+    SDL_DestroyTexture(*texture_bouton_start);
+    SDL_DestroyTexture(*texture_bouton_exit);
+    SDL_RenderPresent(renderer);
+}
+
 
 int main (int argc, char *argv[])
 {
@@ -60,7 +91,10 @@ int main (int argc, char *argv[])
 	    SDL_ExitWithError("Creation fenetre et rendu");
 	
 	//Execution du programme
-	/*----------------------------------------------------------------------------------*/
+	
+	/*-----------Arriere plan------------*/ 
+	
+	//Initialisation
 	SDL_Surface *image_arriere_plan = NULL;
         SDL_Texture *texture_arriere_plan = NULL;
         
@@ -122,20 +156,7 @@ int main (int argc, char *argv[])
         //Affichage image bouton exit
         if(SDL_RenderCopy(renderer, texture_bouton_exit, NULL, &rectangle_bouton_exit) != 0)
             SDL_ExitWithErrorAndDeleteWR(window, renderer, "Affichage texture bouton exit");
-            
-        /*-----------Fusee------------*/ 
-        /*
-        //Initialisation
-        SDL_Surface *image_fusee = NULL;
-        SDL_Texture *texture_fusee = NULL;
         
-        //Encadrement pour la fusee
-	SDL_Rect rectangle_fusee = {LARGEUR_FENETRE/2 - LARGEUR_BOUTON/2, HAUTEUR_FENETRE/3 - HAUTEUR_BOUTON/2, LARGEUR_BOUTON, HAUTEUR_BOUTON};
-        
-        //Creation texture fusee
-        MySDL_CreateTexture(window, renderer, &image_fusee, &texture_fusee, "/home/madjid/Documents/C/Projet/Images/start.bmp");
-        */
-	
         //MAJ du rendu   
         SDL_RenderPresent(renderer);
 	
@@ -158,34 +179,35 @@ int main (int argc, char *argv[])
 	                        //Faire bouger la fusee a droite
 	                        printf("Mouvement vers la droite\n");
 	                        continue;
-	                    
+	                    case SDLK_LEFT:
+	                        //Faire bouger la fusee a gauche
+	                        printf("Mouvement vers la gauche\n");
+	                        continue;
+	                    case SDLK_UP:
+	                        //Faire bouger la fusee vers le haut
+	                        printf("Mouvement vers le haut\n");
+	                        continue;
+	                    case SDLK_DOWN:
+	                        //Faire bouger la fusee vers le bas
+	                        printf("Mouvement vers le bas\n");
+	                        continue;
 	                    default:
 	                        continue;
 	                }
 	            
-	            //Evenemnts souris  
-	            //Mouvement souris
-	            case SDL_MOUSEMOTION:
-	                //Faire des choses (par exemple selectionner start ou exit)
-	                //printf("%d / %d\n", event.motion.x, event.motion.y);
-	                continue;
-	                
+	            //Evenemnts souris  	                
 	            //Touches souris
 	            case SDL_MOUSEBUTTONDOWN:
 	                // Recuperer position du clic si clic droit
 	                int x = event.button.x;
 	                int y = event.button.y;
-	                /*
-	                if(event.button.button == SDL_BUTTON_LEFT)
-	                {
-	                    x = event.button.x;
-	                    y = event.button.y;
-	                }
-	                */
+
 	                //Verifier si le clic est dans le rectangle start
 	                if(x >= (LARGEUR_FENETRE/2 - LARGEUR_BOUTON/2) && x<= (LARGEUR_FENETRE/2 + LARGEUR_BOUTON/2) && y >= (HAUTEUR_FENETRE/3 - HAUTEUR_BOUTON/2) && y <= (HAUTEUR_FENETRE/3 + HAUTEUR_BOUTON/2))
 	                {
 	                    printf("Clic sur bouton start en %d / %d\n", x, y);
+	                    creationFusee(window,renderer, &texture_bouton_start, &texture_bouton_exit);
+	                    
 	                }
 	                
 	                //Verifier si le clic est dans le rectangle exit
