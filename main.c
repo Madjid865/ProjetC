@@ -200,12 +200,6 @@ int main(int argc, char *argv[])
                     if(rectangle_fusee.x > 62)
                       rectangle_fusee.x -= 200;
                     continue;
-                case SDLK_UP:
-                    rectangle_fusee.y -= 7.8125;
-                    continue;
-                case SDLK_DOWN:
-                    rectangle_fusee.y += 7.8125;
-                    continue;
                 default:
                     continue;
                 }
@@ -258,7 +252,7 @@ int main(int argc, char *argv[])
             
         }
 
-        // MAJ positions asteroides
+        // MAJ positions asteroides si ils sortent de l'ecran
         for (int i = 0; i < MAX_ASTEROIDES; i++) 
         {
             asteroides[i].rect.y += asteroides[i].vitesse;
@@ -271,6 +265,17 @@ int main(int argc, char *argv[])
                 asteroides[i].vitesse = 2 + rand() % 5;
             }
         }
+        
+        // Détection des collisions entre la fusée et les astéroïdes
+        for (int i = 0; i < MAX_ASTEROIDES; i++) 
+        {
+            if (SDL_HasIntersection(&rectangle_fusee, &asteroides[i].rect)) 
+            {
+                //Explosion();
+                //GameOver();
+            }
+        }
+
   
         // MAJ rendu
         SDL_RenderPresent(renderer);
@@ -289,4 +294,3 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
-
