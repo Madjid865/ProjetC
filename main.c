@@ -14,6 +14,16 @@
 #define LARGEUR_FUSEE 100
 #define HAUTEUR_FUSEE 100
 
+// Asteroides
+#define TAILLE_ASTEROIDE 50
+#define MAX_ASTEROIDES 10
+
+typedef struct Asteroide_
+{
+    SDL_Rect rect;
+    int vitesse;
+}Asteroide;
+
 // Gestion des erreurs avant creation fenetre et rendu
 void SDL_ExitWithError(const char *message)
 {
@@ -128,11 +138,44 @@ int main(int argc, char *argv[])
     //Chargement en memoire de la texture fusee
     if (SDL_QueryTexture(texture_fusee, NULL, NULL, &rectangle_fusee.w, &rectangle_fusee.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture fusee");
+        
+    /*----------------Asteroides-----------------*/
+    
+    // Initialisation
+    SDL_Surface *image_asteroide = NULL;
+    SDL_Texture *texture_asteroide = NULL;
+    
+    // Tableau d'asteroides
+    Asteroide asteroides[MAX_ASTEROIDES];
+    
+    // Encadrement pour les asteroides
+    SDL_Rect rectangle_asteroide = {LARGEUR_FENETRE / 2 - TAILLE_ASTEROIDE / 2, TAILLE_ASTEROIDE, 0, 0};
+    
+    // Definir des couloirs
+    int nb_couloirs = 5;
+    int couloirs[] = {87, 287, 487, 687, 887};
+    
+    // Initialisation des asteroides
+    for (int i = 0; i < MAX_ASTEROIDES; i++)
+    {
+        asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
+        asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        asteroides[i].rect.w = TAILLE_ASTEROIDE;
+        asteroides[i].rect.h = TAILLE_ASTEROIDE;
+        asteroides[i].vitesse = 2 + rand() % 5;
+    }
 
+    // Creation texture asteroide
+    MySDL_CreateTexture(window, renderer, &image_asteroide, &texture_asteroide, "/home/madjid/Documents/C/Projet/Images/asteroide.bmp");
+    
+    // Chargement en memoire de la texture asteroide
+    if (SDL_QueryTexture(texture_asteroide, NULL, NULL, &rectangle_asteroide.w, &rectangle_asteroide.h) != 0)
+        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture asteroide");
+    
     // Afficher ou pas les boutons (affcihes par defaut)
     SDL_bool afficher_boutons = SDL_TRUE;
 
-    //MAJ du rendu 
+    // MAJ du rendu 
     SDL_RenderPresent(renderer);
 
     /*----------------------------------------------------------------------------------*/
@@ -150,10 +193,12 @@ int main(int argc, char *argv[])
                 switch (event.key.keysym.sym)
                 {
                 case SDLK_RIGHT:
-                    rectangle_fusee.x += 10;
+                    if(rectangle_fusee.x < 862)
+                      rectangle_fusee.x += 200;
                     continue;
                 case SDLK_LEFT:
-                    rectangle_fusee.x -= 10;
+                    if(rectangle_fusee.x > 62)
+                      rectangle_fusee.x -= 200;
                     continue;
                 case SDLK_UP:
                     rectangle_fusee.y -= 7.8125;
@@ -194,11 +239,11 @@ int main(int argc, char *argv[])
             }
         }
         
-        // Effacer les textures qui sont sur le rendu et afficher seuelement l'arriere plan
+        // Effacer les textures qui sont sur le rendu et afficher seulement l'arriere plan
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
 
-        // Afficher ou les boutons ou la fusee en plus de l'arriere plan
+        // Afficher ou les boutons ou la fusee&asteroides en plus de l'arriere plan
         if (afficher_boutons)
         {
             SDL_RenderCopy(renderer, texture_bouton_start, NULL, &rectangle_bouton_start);
@@ -207,8 +252,26 @@ int main(int argc, char *argv[])
         else
         {
             SDL_RenderCopy(renderer, texture_fusee, NULL, &rectangle_fusee);
+            for (int i = 0; i < MAX_ASTEROIDES; i++) {
+                SDL_RenderCopy(renderer, texture_asteroide, NULL, &asteroides[i].rect);
+            }
+            
         }
 
+        // MAJ positions asteroides
+        for (int i = 0; i < MAX_ASTEROIDES; i++) 
+        {
+            asteroides[i].rect.y += asteroides[i].vitesse;
+
+            // Réinitialiser la position si l'astéroïde sort de l'écran
+            if (asteroides[i].rect.y > HAUTEUR_FENETRE) 
+            {
+                asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
+                asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+                asteroides[i].vitesse = 2 + rand() % 5;
+            }
+        }
+  
         // MAJ rendu
         SDL_RenderPresent(renderer);
     }
@@ -219,6 +282,7 @@ int main(int argc, char *argv[])
     SDL_DestroyTexture(texture_bouton_start);
     SDL_DestroyTexture(texture_bouton_exit);
     SDL_DestroyTexture(texture_fusee);
+    SDL_DestroyTexture(texture_asteroide);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
