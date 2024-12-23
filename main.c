@@ -16,13 +16,23 @@
 
 // Asteroides
 #define TAILLE_ASTEROIDE 50
-#define MAX_ASTEROIDES 10
+#define MAX_ASTEROIDES 15
+
+// Etoiles
+#define TAILLE_ETOILE 3
+#define MAX_ETOILES 100
 
 typedef struct Asteroide_
 {
     SDL_Rect rect;
     int vitesse;
 }Asteroide;
+
+typedef struct Etoile_
+{
+    SDL_Rect rect;
+    int vitesse;
+}Etoile;
 
 // Gestion des erreurs avant creation fenetre et rendu
 void SDL_ExitWithError(const char *message)
@@ -130,7 +140,7 @@ int main(int argc, char *argv[])
     SDL_Texture *texture_fusee = NULL;
     
     //Encadrement pour la fusee
-    SDL_Rect rectangle_fusee = {LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2, HAUTEUR_FENETRE - 2 * HAUTEUR_FUSEE, 0, 0};
+    SDL_Rect rectangle_fusee = {LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2, HAUTEUR_FENETRE - HAUTEUR_FUSEE, 0, 0};
     
     //Creation texture fusee
     MySDL_CreateTexture(window, renderer, &image_fusee, &texture_fusee, "/home/madjid/Documents/C/Projet/Images/fusee.bmp");
@@ -171,6 +181,37 @@ int main(int argc, char *argv[])
     // Chargement en memoire de la texture asteroide
     if (SDL_QueryTexture(texture_asteroide, NULL, NULL, &rectangle_asteroide.w, &rectangle_asteroide.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture asteroide");
+        
+    /*------------------Etoiles-----------------*/
+    
+        // Initialisation
+    SDL_Surface *image_etoile = NULL;
+    SDL_Texture *texture_etoile = NULL;
+    
+    // Tableau d'etoiles
+    Etoile etoiles[MAX_ETOILES];
+    
+    // Encadrement pour les etoiles
+    SDL_Rect rectangle_etoile = {LARGEUR_FENETRE / 2 - TAILLE_ETOILE / 2, TAILLE_ETOILE, 0, 0};
+    
+    // Initialisation des etoiles
+    for (int i = 0; i < MAX_ETOILES; i++)
+    {
+        etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
+        etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        etoiles[i].rect.w = TAILLE_ETOILE;
+        etoiles[i].rect.h = TAILLE_ETOILE;
+        etoiles[i].vitesse = 2 + rand() % 5;
+    }
+
+    // Creation texture etoiles
+    MySDL_CreateTexture(window, renderer, &image_etoile, &texture_etoile, "/home/madjid/Documents/C/Projet/Images/etoiles.bmp");
+    
+    // Chargement en memoire de la texture etoile
+    if (SDL_QueryTexture(texture_etoile, NULL, NULL, &rectangle_etoile.w, &rectangle_etoile.h) != 0)
+        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture etoile");
+        
+    /*------------------------------------------*/
     
     // Afficher ou pas les boutons (affcihes par defaut)
     SDL_bool afficher_boutons = SDL_TRUE;
@@ -179,7 +220,7 @@ int main(int argc, char *argv[])
     SDL_RenderPresent(renderer);
 
     /*----------------------------------------------------------------------------------*/
-    // Gestion des evenements
+    // Gestion des evenements clavier souris
 
     SDL_bool program_launched = SDL_TRUE;
     while (program_launched)
@@ -233,10 +274,58 @@ int main(int argc, char *argv[])
             }
         }
         
-        // Effacer les textures qui sont sur le rendu et afficher seulement l'arriere plan
+        // Evenements liés aux asteroides (!affiche_bouton car sinon les asteroides se generent avant start et je peux perdre avant de commencer)
+        if (!afficher_boutons)
+        {
+            // MAJ positions asteroides si ils sortent de l'ecran
+            for (int i = 0; i < MAX_ASTEROIDES; i++) 
+            {
+                asteroides[i].rect.y += asteroides[i].vitesse;
+
+                // Reinitialiser la position si l'asteroide sort de l'ecran
+                if (asteroides[i].rect.y > HAUTEUR_FENETRE) 
+                {
+                    asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
+                    asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+                    asteroides[i].vitesse = 2 + rand() % 5;
+                }
+            }
+            
+            // Detection collisions 
+            for (int i = 0; i < MAX_ASTEROIDES; i++) 
+            {
+                if (SDL_HasIntersection(&rectangle_fusee, &asteroides[i].rect)) 
+                {
+                    //Explosion();
+                    //GameOver();
+                }
+            }
+        }
+        
+        // MAJ positions etoiles si ils sortent de l'ecran
+        for (int i = 0; i < MAX_ETOILES; i++) 
+        {
+            etoiles[i].rect.y += etoiles[i].vitesse;
+
+            // Reinitialiser la position si l'etoile sort de l'écran
+            if (etoiles[i].rect.y > HAUTEUR_FENETRE) 
+            {
+                etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
+                etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+                etoiles[i].vitesse = 2 + rand() % 5;
+            }
+        }
+        
+        /*----------------Affichage----------------*/
+        
+        // Effacer les textures qui sont sur le rendu et afficher seulement l'arriere plan et les etoiles
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
 
+        for (int i = 0; i < MAX_ETOILES; i++) {
+            SDL_RenderCopy(renderer, texture_etoile, NULL, &etoiles[i].rect);
+        }
+        
         // Afficher ou les boutons ou la fusee&asteroides en plus de l'arriere plan
         if (afficher_boutons)
         {
@@ -251,31 +340,6 @@ int main(int argc, char *argv[])
             }
             
         }
-
-        // MAJ positions asteroides si ils sortent de l'ecran
-        for (int i = 0; i < MAX_ASTEROIDES; i++) 
-        {
-            asteroides[i].rect.y += asteroides[i].vitesse;
-
-            // Réinitialiser la position si l'astéroïde sort de l'écran
-            if (asteroides[i].rect.y > HAUTEUR_FENETRE) 
-            {
-                asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
-                asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-                asteroides[i].vitesse = 2 + rand() % 5;
-            }
-        }
-        
-        // Détection des collisions entre la fusée et les astéroïdes
-        for (int i = 0; i < MAX_ASTEROIDES; i++) 
-        {
-            if (SDL_HasIntersection(&rectangle_fusee, &asteroides[i].rect)) 
-            {
-                //Explosion();
-                //GameOver();
-            }
-        }
-
   
         // MAJ rendu
         SDL_RenderPresent(renderer);
