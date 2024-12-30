@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,6 +22,9 @@
 // Etoiles
 #define TAILLE_ETOILE 3
 #define MAX_ETOILES 100
+
+// Texte
+
 
 typedef struct Asteroide_
 {
@@ -65,11 +69,28 @@ void MySDL_CreateTexture(SDL_Window *window, SDL_Renderer *renderer, SDL_Surface
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Creation texture");
 }
 
+// Affichage texte
+void MySDL_RenderText(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color color, SDL_Rect *position) 
+{
+    SDL_Surface *text_surface = TTF_RenderText_Solid(font, text, color);
+    if (text_surface == NULL)
+        SDL_ExitWithError("Erreur : creation surface texte");
+
+    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+    SDL_FreeSurface(text_surface);
+    if (text_texture == NULL)
+        SDL_ExitWithError("Erreur : creation texture texte");
+
+    SDL_RenderCopy(renderer, text_texture, NULL, position);
+    SDL_DestroyTexture(text_texture);
+}
+
 int main(int argc, char *argv[])
 {
     // Initialisation
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
+    int score = 0;
 
     // Lancement SDL
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -211,6 +232,20 @@ int main(int argc, char *argv[])
     if (SDL_QueryTexture(texture_etoile, NULL, NULL, &rectangle_etoile.w, &rectangle_etoile.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture etoile");
         
+    /*------------------Texte-----------------*/
+    
+    // Initialiser SDL_ttf
+    if (TTF_Init() == -1)
+        SDL_ExitWithError("Initialisation SDL_ttf");
+
+    // Charger une police
+    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 40);
+    if (font == NULL)
+        SDL_ExitWithError("Chargement de la police");
+
+    // Couleur pour le texte
+    SDL_Color white = {255, 255, 255, 255};
+        
     /*------------------------------------------*/
     
     // Afficher ou pas les boutons (affcihes par defaut)
@@ -274,9 +309,13 @@ int main(int argc, char *argv[])
             }
         }
         
+        
         // Evenements liés aux asteroides (!affiche_bouton car sinon les asteroides se generent avant start et je peux perdre avant de commencer)
         if (!afficher_boutons)
         {
+            // Tant que le jeu est en cours, incrementer le score
+            score++;
+            
             // MAJ positions asteroides si ils sortent de l'ecran
             for (int i = 0; i < MAX_ASTEROIDES; i++) 
             {
@@ -291,6 +330,16 @@ int main(int argc, char *argv[])
                 }
             }
             
+            // Afficher le score pendant le jeu
+            char score_text[50];
+            snprintf(score_text, sizeof(score_text), "Score: %d", score);
+
+            SDL_Rect score_position = {10, 10, 150, 30}; 
+            MySDL_RenderText(renderer, font, score_text, white, &score_position);
+
+            // MAJ rendu
+            SDL_RenderPresent(renderer);
+            
             // Detection collisions 
             for (int i = 0; i < MAX_ASTEROIDES; i++) 
             {
@@ -298,11 +347,33 @@ int main(int argc, char *argv[])
                 {
                     //Explosion();
                     //GameOver();
+                    
+                    // Afficher le score final avec la texture arriere plan
+                    SDL_RenderClear(renderer);
+                    SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
+                    
+                    char final_text[100];
+                    if (score < 1000) {
+                        snprintf(final_text, sizeof(final_text), "Score: %d - Nuuuul !", score);
+                    } else if (score < 2000) {
+                        snprintf(final_text, sizeof(final_text), "Score: %d - Pas maaal chacal !", score);
+                    } else if (score < 3000) {
+                        snprintf(final_text, sizeof(final_text), "Score: %d - Y'a du niveau !", score);
+                    } else {
+                        snprintf(final_text, sizeof(final_text), "Score: %d - Trop fort !", score);
+                    }
+
+                    SDL_Rect final_text_position = {LARGEUR_FENETRE / 2 - 150, HAUTEUR_FENETRE / 2 - 30, 300, 60};
+                    MySDL_RenderText(renderer, font, final_text, white, &final_text_position);
+
+                    SDL_RenderPresent(renderer);
+                    SDL_Delay(10000); // Attendre pour que le joueur ai le remps de voir son score
+
                 }
             }
         }
         
-        // MAJ positions etoiles si ils sortent de l'ecran
+        // MAJ positions etoiles si elles sortent de l'ecran
         for (int i = 0; i < MAX_ETOILES; i++) 
         {
             etoiles[i].rect.y += etoiles[i].vitesse;
@@ -344,7 +415,7 @@ int main(int argc, char *argv[])
         // MAJ rendu
         SDL_RenderPresent(renderer);
     }
-
+    
     /*----------------------------------------------------------------------------------*/
 
     SDL_DestroyTexture(texture_arriere_plan);
@@ -354,6 +425,8 @@ int main(int argc, char *argv[])
     SDL_DestroyTexture(texture_asteroide);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_CloseFont(font);
+    TTF_Quit();
     SDL_Quit();
 
     return EXIT_SUCCESS;
