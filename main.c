@@ -1,7 +1,8 @@
-#include <SDL.h>
-#include <SDL_ttf.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <SDL_mixer.h>
 
 // Fenetre
 #define LARGEUR_FENETRE 1024
@@ -83,6 +84,37 @@ void MySDL_RenderText(SDL_Renderer *renderer, TTF_Font *font, const char *text, 
 
     SDL_RenderCopy(renderer, text_texture, NULL, position);
     SDL_DestroyTexture(text_texture);
+}
+
+void ResetGame(int nb_couloirs, int couloirs[], Asteroide asteroides[], Etoile etoiles[], int *score, SDL_Rect *rectangle_fusee, SDL_bool *afficher_boutons)
+{
+    // Reinitialisation position des asteroides
+    for (int i = 0; i < MAX_ASTEROIDES; i++)
+    {
+        asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
+        asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        asteroides[i].rect.w = TAILLE_ASTEROIDE;
+        asteroides[i].rect.h = TAILLE_ASTEROIDE;
+        asteroides[i].vitesse = 2 + rand() % 5;
+    }
+    
+    // Reinitialisation position des etoiles
+    for (int i = 0; i < MAX_ETOILES; i++)
+    {
+        etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
+        etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        etoiles[i].rect.w = TAILLE_ETOILE;
+        etoiles[i].rect.h = TAILLE_ETOILE;
+        etoiles[i].vitesse = 2 + rand() % 5;
+    }
+    
+    // Reinitialisation position de la fusee
+    rectangle_fusee -> x = LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2;
+    rectangle_fusee -> y = HAUTEUR_FENETRE - HAUTEUR_FUSEE;
+    
+    // Reinitialisation score et afffichage start / exit
+    *score = 0;
+    *afficher_boutons = SDL_TRUE;
 }
 
 int main(int argc, char *argv[])
@@ -245,6 +277,18 @@ int main(int argc, char *argv[])
 
     // Couleur pour le texte
     SDL_Color white = {255, 255, 255, 255};
+    
+    /*------------------Audio-----------------*/
+    
+    Mix_Music* Arriere_plan;
+    Mix_Music* Bouton;
+    Mix_Music* Partie;
+    Mix_Music* Collision;
+    
+    SDL_Init(SDL_INIT_AUDIO);
+    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 1024);
+    myMus = Mix_LoadMUS("ma_musique.ogg");
+    
         
     /*------------------------------------------*/
     
@@ -290,12 +334,14 @@ int main(int argc, char *argv[])
                         y >= rectangle_bouton_start.y && y <= rectangle_bouton_start.y + rectangle_bouton_start.h)
                     {
                         afficher_boutons = SDL_FALSE;
+                        Mix_PlayMusic(Bouton, 1);
                     }
 
                     if (x >= rectangle_bouton_exit.x && x <= rectangle_bouton_exit.x + rectangle_bouton_exit.w &&
                         y >= rectangle_bouton_exit.y && y <= rectangle_bouton_exit.y + rectangle_bouton_exit.h)
                     {
                         program_launched = SDL_FALSE;
+                        Mix_PlayMusic(Bouton, 1);
                     }
                 }
                 break;
@@ -345,8 +391,8 @@ int main(int argc, char *argv[])
             {
                 if (SDL_HasIntersection(&rectangle_fusee, &asteroides[i].rect)) 
                 {
-                    //Explosion();
-                    //GameOver();
+                    // Music collision
+                    Mix_PlayMusic(Collison, 1);
                     
                     // Afficher le score final avec la texture arriere plan
                     SDL_RenderClear(renderer);
@@ -367,8 +413,10 @@ int main(int argc, char *argv[])
                     MySDL_RenderText(renderer, font, final_text, white, &final_text_position);
 
                     SDL_RenderPresent(renderer);
-                    SDL_Delay(10000); // Attendre pour que le joueur ai le remps de voir son score
-
+                    SDL_Delay(5000); // Attendre pour que le joueur ai le temps de voir son score
+                    
+                    // Reinitialiser le tout et proposer start ou exit 
+                    ResetGame(nb_couloirs, couloirs, asteroides, etoiles, &score, &rectangle_fusee, &afficher_boutons);
                 }
             }
         }
@@ -392,17 +440,21 @@ int main(int argc, char *argv[])
         // Effacer les textures qui sont sur le rendu et afficher seulement l'arriere plan et les etoiles
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
+        
+        // Music arriere plan
+        Mix_PlayMusic(Arriere_plan, 1);
 
         for (int i = 0; i < MAX_ETOILES; i++) {
             SDL_RenderCopy(renderer, texture_etoile, NULL, &etoiles[i].rect);
         }
         
-        // Afficher ou les boutons ou la fusee&asteroides en plus de l'arriere plan
+        // Afficher ou les boutons ou la fusee & asteroides en plus de l'arriere plan
         if (afficher_boutons)
         {
             SDL_RenderCopy(renderer, texture_bouton_start, NULL, &rectangle_bouton_start);
             SDL_RenderCopy(renderer, texture_bouton_exit, NULL, &rectangle_bouton_exit);
         }
+        
         else
         {
             SDL_RenderCopy(renderer, texture_fusee, NULL, &rectangle_fusee);
@@ -410,6 +462,8 @@ int main(int argc, char *argv[])
                 SDL_RenderCopy(renderer, texture_asteroide, NULL, &asteroides[i].rect);
             }
             
+            // Music jeu
+            Mix_PlayMusic(Partie, 1);
         }
   
         // MAJ rendu
@@ -427,6 +481,11 @@ int main(int argc, char *argv[])
     SDL_DestroyWindow(window);
     TTF_CloseFont(font);
     TTF_Quit();
+    Mix_FreeMusic(Arriere_plan);
+    Mix_FreeMusic(Bouton);
+    Mix_FreeMusic(Partie);
+    Mix_FreeMusic(Collision);
+    Mix_CloseAudio();
     SDL_Quit();
 
     return EXIT_SUCCESS;
