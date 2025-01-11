@@ -1,151 +1,33 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <SDL.h>
-#include <SDL_ttf.h>
-#include <SDL_mixer.h>
+#include "jeu.h"
 
-// Fenetre
-#define LARGEUR_FENETRE 1024
-#define HAUTEUR_FENETRE 800
-
-// Boutons
-#define LARGEUR_BOUTON 300
-#define HAUTEUR_BOUTON 100
-
-// Fusee
-#define LARGEUR_FUSEE 100
-#define HAUTEUR_FUSEE 100
-
-// Asteroides
-#define TAILLE_ASTEROIDE 50
-#define MAX_ASTEROIDES 15
-
-// Etoiles
-#define TAILLE_ETOILE 3
-#define MAX_ETOILES 100
-
-// Texte
-
-
-typedef struct Asteroide_
+void LancerJeu(SDL_Window *window, SDL_Renderer *renderer)
 {
-    SDL_Rect rect;
-    int vitesse;
-}Asteroide;
-
-typedef struct Etoile_
-{
-    SDL_Rect rect;
-    int vitesse;
-}Etoile;
-
-// Gestion des erreurs avant creation fenetre et rendu
-void SDL_ExitWithError(const char *message)
-{
-    SDL_Log("ERREUR : %s > %s\n", message, SDL_GetError());
-    SDL_Quit();
-    exit(EXIT_FAILURE);
-}
-
-// Gestion des erreurs et destruction fenetre et rendu
-void SDL_ExitWithErrorAndDeleteWR(SDL_Window *window, SDL_Renderer *renderer, const char *message)
-{
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_ExitWithError(message);
-}
-
-// Creation textures arriere-plan & boutons start et exit
-void MySDL_CreateTexture(SDL_Window *window, SDL_Renderer *renderer, SDL_Surface **image, SDL_Texture **texture, const char *chemin_image)
-{
-    // Chargement image
-    *image = SDL_LoadBMP(chemin_image);
-    if (*image == NULL)
-        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement image");
-
-    // Creation texture
-    *texture = SDL_CreateTextureFromSurface(renderer, *image);
-    SDL_FreeSurface(*image);
-    if (*texture == NULL)
-        SDL_ExitWithErrorAndDeleteWR(window, renderer, "Creation texture");
-}
-
-// Affichage texte
-void MySDL_RenderText(SDL_Renderer *renderer, TTF_Font *font, const char *text, SDL_Color color, SDL_Rect *position) 
-{
-    SDL_Surface *text_surface = TTF_RenderText_Solid(font, text, color);
-    if (text_surface == NULL)
-        SDL_ExitWithError("Erreur : creation surface texte");
-
-    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
-    SDL_FreeSurface(text_surface);
-    if (text_texture == NULL)
-        SDL_ExitWithError("Erreur : creation texture texte");
-
-    SDL_RenderCopy(renderer, text_texture, NULL, position);
-    SDL_DestroyTexture(text_texture);
-}
-
-void ResetGame(int nb_couloirs, int couloirs[], Asteroide asteroides[], Etoile etoiles[], int *score, SDL_Rect *rectangle_fusee, SDL_bool *afficher_boutons)
-{
-    // Reinitialisation position des asteroides
-    for (int i = 0; i < MAX_ASTEROIDES; i++)
-    {
-        asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
-        asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-        asteroides[i].rect.w = TAILLE_ASTEROIDE;
-        asteroides[i].rect.h = TAILLE_ASTEROIDE;
-        asteroides[i].vitesse = 2 + rand() % 5;
-    }
-    
-    // Reinitialisation position des etoiles
-    for (int i = 0; i < MAX_ETOILES; i++)
-    {
-        etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
-        etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-        etoiles[i].rect.w = TAILLE_ETOILE;
-        etoiles[i].rect.h = TAILLE_ETOILE;
-        etoiles[i].vitesse = 2 + rand() % 5;
-    }
-    
-    // Reinitialisation position de la fusee
-    rectangle_fusee -> x = LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2;
-    rectangle_fusee -> y = HAUTEUR_FENETRE - HAUTEUR_FUSEE;
-    
-    // Reinitialisation score et afffichage start / exit
-    *score = 0;
-    *afficher_boutons = SDL_TRUE;
-}
-
-int main(int argc, char *argv[])
-{
-    // Initialisation
-    SDL_Window *window = NULL;
-    SDL_Renderer *renderer = NULL;
+    // Initialisation des variables du jeu, des textures, etc.
     int score = 0;
-
-    // Lancement SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        SDL_ExitWithError("Initialisation SDL");
-
-    // Creation fenetre + rendu
-    if (SDL_CreateWindowAndRenderer(LARGEUR_FENETRE, HAUTEUR_FENETRE, 0, &window, &renderer) != 0)
-        SDL_ExitWithError("Creation fenetre et rendu");
-
-    // Execution du programme
-
-    /*-----------Arriere plan------------*/
-
-    SDL_Surface *image_arriere_plan = NULL;
+    SDL_Surface *image_arriere_plan = NULL; // Arriere plan
     SDL_Texture *texture_arriere_plan = NULL;
+    SDL_Surface *image_bouton_start = NULL; // Boutons
+    SDL_Surface *image_bouton_exit = NULL;
+    SDL_Texture *texture_bouton_start = NULL;
+    SDL_Texture *texture_bouton_exit = NULL;
+    SDL_Surface *image_fusee = NULL; // Fusee
+    SDL_Texture *texture_fusee = NULL;
+    SDL_Surface *image_asteroide = NULL; // Asteroides
+    SDL_Texture *texture_asteroide = NULL;
+    SDL_Surface *image_etoile = NULL; // Etoiles
+    SDL_Texture *texture_etoile = NULL;
+    if (TTF_Init() == -1) // SDL_ttf
+        SDL_ExitWithError("Initialisation SDL_ttf");
+        
+    /*-----------Arriere plan------------*/
     
-    //Creation texture arriere plan
+    // Creation texture arriere plan
     MySDL_CreateTexture(window, renderer, &image_arriere_plan, &texture_arriere_plan, "/home/madjid/Documents/C/Projet/Images/subtle_space_background.bmp");
         
-    //Encadrement pour la texture arriere plan
+    // Encadrement pour la texture arriere plan
     SDL_Rect rectangle_texture;
     
-    //Chargement en memoire de la texture arriere plan
+    // Chargement en memoire de la texture arriere plan
     if(SDL_QueryTexture(texture_arriere_plan, NULL, NULL, &rectangle_texture.w, &rectangle_texture.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement en memoire texture arriere plan");
         
@@ -154,59 +36,45 @@ int main(int argc, char *argv[])
     rectangle_texture.h = HAUTEUR_FENETRE;
     */
 	
-    //Centrer la texture par rapport a la fenetre
+    // Centrer la texture par rapport a la fenetre
     rectangle_texture.x = (LARGEUR_FENETRE - rectangle_texture.w) / 2;
     rectangle_texture.y = (HAUTEUR_FENETRE - rectangle_texture.h) / 2;
-
+    
     /*-----------Boutons------------*/
-  
-    //Initialisation
-    SDL_Surface *image_bouton_start = NULL;
-    SDL_Surface *image_bouton_exit = NULL;
-    SDL_Texture *texture_bouton_start = NULL;
-    SDL_Texture *texture_bouton_exit = NULL;
-
-    //Encadrement pour bouton start
+    
+    // Encadrement pour bouton start
     SDL_Rect rectangle_bouton_start = {LARGEUR_FENETRE / 2 - LARGEUR_BOUTON / 2, HAUTEUR_FENETRE / 3 - HAUTEUR_BOUTON / 2, 0, 0};
     
-    //Creation texture bouton start
+    // Creation texture bouton start
     MySDL_CreateTexture(window, renderer, &image_bouton_start, &texture_bouton_start, "/home/madjid/Documents/C/Projet/Images/start.bmp");
 
-    //Chargement en memoire de la texture bouton start
+    // Chargement en memoire de la texture bouton start
     if (SDL_QueryTexture(texture_bouton_start, NULL, NULL, &rectangle_bouton_start.w, &rectangle_bouton_start.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture bouton start");
 
-    //Encadrement pour bouton exit
+    // Encadrement pour bouton exit
     SDL_Rect rectangle_bouton_exit = {LARGEUR_FENETRE / 2 - LARGEUR_BOUTON / 2, 2 * HAUTEUR_FENETRE / 3 - HAUTEUR_BOUTON / 2, 0, 0};
     
-    //Creation texture bouton exit
+    // Creation texture bouton exit
     MySDL_CreateTexture(window, renderer, &image_bouton_exit, &texture_bouton_exit, "/home/madjid/Documents/C/Projet/Images/exit.bmp");
 
-    //Chargement en memoire de la texture bouton exit
+    // Chargement en memoire de la texture bouton exit
     if (SDL_QueryTexture(texture_bouton_exit, NULL, NULL, &rectangle_bouton_exit.w, &rectangle_bouton_exit.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture bouton exit");
-
+        
     /*----------------Fusee-----------------*/
-
-    // Initialisation
-    SDL_Surface *image_fusee = NULL;
-    SDL_Texture *texture_fusee = NULL;
     
-    //Encadrement pour la fusee
+    // Encadrement pour la fusee
     SDL_Rect rectangle_fusee = {LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2, HAUTEUR_FENETRE - HAUTEUR_FUSEE, 0, 0};
     
-    //Creation texture fusee
+    // Creation texture fusee
     MySDL_CreateTexture(window, renderer, &image_fusee, &texture_fusee, "/home/madjid/Documents/C/Projet/Images/fusee.bmp");
 
-    //Chargement en memoire de la texture fusee
+    // Chargement en memoire de la texture fusee
     if (SDL_QueryTexture(texture_fusee, NULL, NULL, &rectangle_fusee.w, &rectangle_fusee.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture fusee");
-        
-    /*----------------Asteroides-----------------*/
     
-    // Initialisation
-    SDL_Surface *image_asteroide = NULL;
-    SDL_Texture *texture_asteroide = NULL;
+    /*----------------Asteroides-----------------*/
     
     // Tableau d'asteroides
     Asteroide asteroides[MAX_ASTEROIDES];
@@ -219,15 +87,8 @@ int main(int argc, char *argv[])
     int couloirs[] = {87, 287, 487, 687, 887};
     
     // Initialisation des asteroides
-    for (int i = 0; i < MAX_ASTEROIDES; i++)
-    {
-        asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
-        asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-        asteroides[i].rect.w = TAILLE_ASTEROIDE;
-        asteroides[i].rect.h = TAILLE_ASTEROIDE;
-        asteroides[i].vitesse = 2 + rand() % 5;
-    }
-
+    initAsteroides (asteroides, couloirs, nb_couloirs);
+    
     // Creation texture asteroide
     MySDL_CreateTexture(window, renderer, &image_asteroide, &texture_asteroide, "/home/madjid/Documents/C/Projet/Images/asteroide.bmp");
     
@@ -235,12 +96,6 @@ int main(int argc, char *argv[])
     if (SDL_QueryTexture(texture_asteroide, NULL, NULL, &rectangle_asteroide.w, &rectangle_asteroide.h) != 0)
         SDL_ExitWithErrorAndDeleteWR(window, renderer, "Chargement texture asteroide");
         
-    /*------------------Etoiles-----------------*/
-    
-        // Initialisation
-    SDL_Surface *image_etoile = NULL;
-    SDL_Texture *texture_etoile = NULL;
-    
     // Tableau d'etoiles
     Etoile etoiles[MAX_ETOILES];
     
@@ -248,15 +103,8 @@ int main(int argc, char *argv[])
     SDL_Rect rectangle_etoile = {LARGEUR_FENETRE / 2 - TAILLE_ETOILE / 2, TAILLE_ETOILE, 0, 0};
     
     // Initialisation des etoiles
-    for (int i = 0; i < MAX_ETOILES; i++)
-    {
-        etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
-        etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-        etoiles[i].rect.w = TAILLE_ETOILE;
-        etoiles[i].rect.h = TAILLE_ETOILE;
-        etoiles[i].vitesse = 2 + rand() % 5;
-    }
-
+    initEtoiles (etoiles);
+    
     // Creation texture etoiles
     MySDL_CreateTexture(window, renderer, &image_etoile, &texture_etoile, "/home/madjid/Documents/C/Projet/Images/etoiles.bmp");
     
@@ -266,10 +114,6 @@ int main(int argc, char *argv[])
         
     /*------------------Texte-----------------*/
     
-    // Initialiser SDL_ttf
-    if (TTF_Init() == -1)
-        SDL_ExitWithError("Initialisation SDL_ttf");
-
     // Charger une police
     TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 40);
     if (font == NULL)
@@ -278,18 +122,6 @@ int main(int argc, char *argv[])
     // Couleur pour le texte
     SDL_Color white = {255, 255, 255, 255};
     
-    /*------------------Audio-----------------*/
-    
-    Mix_Music* Arriere_plan;
-    Mix_Music* Bouton;
-    Mix_Music* Partie;
-    Mix_Music* Collision;
-    
-    SDL_Init(SDL_INIT_AUDIO);
-    Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 1024);
-    myMus = Mix_LoadMUS("ma_musique.ogg");
-    
-        
     /*------------------------------------------*/
     
     // Afficher ou pas les boutons (affcihes par defaut)
@@ -297,10 +129,8 @@ int main(int argc, char *argv[])
 
     // MAJ du rendu 
     SDL_RenderPresent(renderer);
-
-    /*----------------------------------------------------------------------------------*/
-    // Gestion des evenements clavier souris
-
+    
+    // Boucle de jeu principale
     SDL_bool program_launched = SDL_TRUE;
     while (program_launched)
     {
@@ -334,14 +164,12 @@ int main(int argc, char *argv[])
                         y >= rectangle_bouton_start.y && y <= rectangle_bouton_start.y + rectangle_bouton_start.h)
                     {
                         afficher_boutons = SDL_FALSE;
-                        Mix_PlayMusic(Bouton, 1);
                     }
 
                     if (x >= rectangle_bouton_exit.x && x <= rectangle_bouton_exit.x + rectangle_bouton_exit.w &&
                         y >= rectangle_bouton_exit.y && y <= rectangle_bouton_exit.y + rectangle_bouton_exit.h)
                     {
                         program_launched = SDL_FALSE;
-                        Mix_PlayMusic(Bouton, 1);
                     }
                 }
                 break;
@@ -363,18 +191,7 @@ int main(int argc, char *argv[])
             score++;
             
             // MAJ positions asteroides si ils sortent de l'ecran
-            for (int i = 0; i < MAX_ASTEROIDES; i++) 
-            {
-                asteroides[i].rect.y += asteroides[i].vitesse;
-
-                // Reinitialiser la position si l'asteroide sort de l'ecran
-                if (asteroides[i].rect.y > HAUTEUR_FENETRE) 
-                {
-                    asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
-                    asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-                    asteroides[i].vitesse = 2 + rand() % 5;
-                }
-            }
+            majAsteroides (asteroides, couloirs, nb_couloirs);
             
             // Afficher le score pendant le jeu
             char score_text[50];
@@ -390,10 +207,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i < MAX_ASTEROIDES; i++) 
             {
                 if (SDL_HasIntersection(&rectangle_fusee, &asteroides[i].rect)) 
-                {
-                    // Music collision
-                    Mix_PlayMusic(Collison, 1);
-                    
+                {                    
                     // Afficher le score final avec la texture arriere plan
                     SDL_RenderClear(renderer);
                     SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
@@ -402,7 +216,7 @@ int main(int argc, char *argv[])
                     if (score < 1000) {
                         snprintf(final_text, sizeof(final_text), "Score: %d - Nuuuul !", score);
                     } else if (score < 2000) {
-                        snprintf(final_text, sizeof(final_text), "Score: %d - Pas maaal chacal !", score);
+                        snprintf(final_text, sizeof(final_text), "Score: %d - Pas maaal !", score);
                     } else if (score < 3000) {
                         snprintf(final_text, sizeof(final_text), "Score: %d - Y'a du niveau !", score);
                     } else {
@@ -416,33 +230,19 @@ int main(int argc, char *argv[])
                     SDL_Delay(5000); // Attendre pour que le joueur ai le temps de voir son score
                     
                     // Reinitialiser le tout et proposer start ou exit 
-                    ResetGame(nb_couloirs, couloirs, asteroides, etoiles, &score, &rectangle_fusee, &afficher_boutons);
+                    RelancerJeu(nb_couloirs, couloirs, asteroides, etoiles, &score, &rectangle_fusee, &afficher_boutons);
                 }
             }
         }
         
         // MAJ positions etoiles si elles sortent de l'ecran
-        for (int i = 0; i < MAX_ETOILES; i++) 
-        {
-            etoiles[i].rect.y += etoiles[i].vitesse;
-
-            // Reinitialiser la position si l'etoile sort de l'écran
-            if (etoiles[i].rect.y > HAUTEUR_FENETRE) 
-            {
-                etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
-                etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
-                etoiles[i].vitesse = 2 + rand() % 5;
-            }
-        }
+        majEtoiles (etoiles);
         
         /*----------------Affichage----------------*/
         
         // Effacer les textures qui sont sur le rendu et afficher seulement l'arriere plan et les etoiles
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture_arriere_plan, NULL, &rectangle_texture);
-        
-        // Music arriere plan
-        Mix_PlayMusic(Arriere_plan, 1);
 
         for (int i = 0; i < MAX_ETOILES; i++) {
             SDL_RenderCopy(renderer, texture_etoile, NULL, &etoiles[i].rect);
@@ -461,9 +261,6 @@ int main(int argc, char *argv[])
             for (int i = 0; i < MAX_ASTEROIDES; i++) {
                 SDL_RenderCopy(renderer, texture_asteroide, NULL, &asteroides[i].rect);
             }
-            
-            // Music jeu
-            Mix_PlayMusic(Partie, 1);
         }
   
         // MAJ rendu
@@ -477,16 +274,37 @@ int main(int argc, char *argv[])
     SDL_DestroyTexture(texture_bouton_exit);
     SDL_DestroyTexture(texture_fusee);
     SDL_DestroyTexture(texture_asteroide);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
     TTF_CloseFont(font);
     TTF_Quit();
-    Mix_FreeMusic(Arriere_plan);
-    Mix_FreeMusic(Bouton);
-    Mix_FreeMusic(Partie);
-    Mix_FreeMusic(Collision);
-    Mix_CloseAudio();
-    SDL_Quit();
+}
 
-    return EXIT_SUCCESS;
+void RelancerJeu(int nb_couloirs, int couloirs[], Asteroide asteroides[], Etoile etoiles[], int *score, SDL_Rect *rectangle_fusee, SDL_bool *afficher_boutons)
+{
+    // Reinitialisation position des asteroides
+    for (int i = 0; i < MAX_ASTEROIDES; i++)
+    {
+        asteroides[i].rect.x = couloirs[rand() % nb_couloirs];
+        asteroides[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        asteroides[i].rect.w = TAILLE_ASTEROIDE;
+        asteroides[i].rect.h = TAILLE_ASTEROIDE;
+        asteroides[i].vitesse = 2 + rand() % 5;
+    }
+    
+    // Reinitialisation position des etoiles
+    for (int i = 0; i < MAX_ETOILES; i++)
+    {
+        etoiles[i].rect.x = rand() % (LARGEUR_FENETRE - TAILLE_ETOILE);
+        etoiles[i].rect.y = -(rand() % HAUTEUR_FENETRE);
+        etoiles[i].rect.w = TAILLE_ETOILE;
+        etoiles[i].rect.h = TAILLE_ETOILE;
+        etoiles[i].vitesse = 2 + rand() % 5;
+    }
+    
+    // Reinitialisation position de la fusee
+    rectangle_fusee -> x = LARGEUR_FENETRE / 2 - LARGEUR_FUSEE / 2;
+    rectangle_fusee -> y = HAUTEUR_FENETRE - HAUTEUR_FUSEE;
+    
+    // Reinitialisation score et afffichage start / exit
+    *score = 0;
+    *afficher_boutons = SDL_TRUE;
 }
