@@ -36,9 +36,9 @@ Les chemins doivent pointer vers les fichiers correspondants dans le dossier Ima
   ._/game_
   
 **Structure du projet**
-main.c : Point d'entrée du programme.
-entites.c/.h : Gestion des structures et mises à jour des entités (astéroïdes, étoiles).
-graphique.c/.h : Chargement et affichage des textures et graphiques.
-jeu.c/.h : Gestion de la logique de jeu (collisions, scores, réinitialisation).
-constantes.h : Définit les dimensions et constantes du jeu.
-Images/ : Contient les images nécessaires au jeu.
+- main.c : Point d'entrée du programme.
+- entites.c/.h : Gestion des structures et mises à jour des entités (astéroïdes, étoiles).
+- graphique.c/.h : Chargement et affichage des textures et graphiques.
+- jeu.c/.h : Gestion de la logique de jeu (collisions, scores, réinitialisation).
+- constantes.h : Définit les dimensions et constantes du jeu.
+- Images/ : Contient les images nécessaires au jeu.
