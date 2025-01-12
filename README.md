@@ -18,7 +18,7 @@ Pour compiler et exécuter le jeu, vous aurez besoin de
 
 **Instructions d'installation**
 - Clonez le dépôt :
-  _git clone https://github.com/Madjid865/ProjetC.git
+  _git clone https://github.com/Madjid865/ProjetC.git _puis _
   cd ProjetC_
 - Installez les bibliothèques SDL2 (si ce n'est pas encore fait) :
   _sudo apt-get install libsdl2-dev libsdl2-ttf-dev_
